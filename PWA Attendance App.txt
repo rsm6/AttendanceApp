@@ -1,0 +1,87 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Attendance System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <link rel="manifest" href="manifest.json">
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+</head>
+<body class="bg-gray-100 p-4">
+    <div class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl">
+        <div class="p-8">
+            <div class="uppercase tracking-wide text-sm text-indigo-500 font-semibold mb-4">Student Attendance</div>
+            <form id="attendanceForm" class="space-y-4">
+                <input type="text" id="name" placeholder="Student Name" required class="w-full px-3 py-2 border rounded-md">
+                <input type="text" id="standard" placeholder="Standard" required class="w-full px-3 py-2 border rounded-md">
+                <input type="tel" id="mobile" placeholder="Mobile Number" required class="w-full px-3 py-2 border rounded-md">
+                <select id="batch" required class="w-full px-3 py-2 border rounded-md">
+                    <option value="">Select Batch</option>
+                    <option value="11th">11th</option>
+                    <option value="12th">12th</option>
+                </select>
+                <input type="file" id="photo" accept="image/*" capture="user" required class="w-full px-3 py-2 border rounded-md">
+                <button type="submit" class="w-full bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Submit Attendance</button>
+            </form>
+            <div id="location" class="mt-4 text-sm text-gray-600"></div>
+        </div>
+    </div>
+
+    <script>
+        let userLocation = null;
+
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                userLocation = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude
+                };
+                document.getElementById('location').textContent = `Location: ${userLocation.latitude}, ${userLocation.longitude}`;
+            });
+        }
+
+        document.getElementById('attendanceForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('name').value;
+            const standard = document.getElementById('standard').value;
+            const mobile = document.getElementById('mobile').value;
+            const batch = document.getElementById('batch').value;
+            const photo = document.getElementById('photo').files[0];
+
+            if (!photo) {
+                alert('Please take a photo');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const photoData = event.target.result;
+
+                const data = [
+                    ['Name', 'Standard', 'Mobile', 'Batch', 'Location', 'Timestamp', 'Photo'],
+                    [name, standard, mobile, batch, JSON.stringify(userLocation), new Date().toISOString(), photoData]
+                ];
+
+                const ws = XLSX.utils.aoa_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Attendance");
+
+                XLSX.writeFile(wb, "attendance.xlsx");
+
+                alert('Attendance submitted successfully!');
+                document.getElementById('attendanceForm').reset();
+            };
+
+            reader.readAsDataURL(photo);
+        });
+    </script>
+</body>
+</html>
